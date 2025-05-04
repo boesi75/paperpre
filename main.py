@@ -236,7 +236,7 @@ def main():
             else:
                 print(f"✅ Tokenanzahl: {token_count} – alles im grünen Bereich.")
             summary = analyze_with_gpt(text)
-            if summary.get("ist_rechnung") and "iban" in summary:
+            if summary.get("ist_rechnung") and summary.get("iban"):
                 summary["iban"] = clean_iban(summary["iban"])
 
         # Dateiumbenennung
@@ -251,9 +251,14 @@ def main():
         else:
             print(f"⚠️ Datei {neuer_pdf_name} existiert bereits – nicht umbenannt.")
 
-        # QR-Code falls Rechnung
+        # QR-Code nur erstellen, wenn alle nötigen Felder vorhanden sind
         qr_filename = None
-        if summary.get("ist_rechnung"):
+        if (summary.get("ist_rechnung")
+            and summary.get("iban")
+            and summary.get("empfaenger")
+            and summary.get("betrag_eur")
+            and summary.get("verwendungszweck")):
+
             qr_filename = f"{dateiname_clean}.png"
             qr_path = os.path.join(dokumenten_ordner, qr_filename)
             create_sepa_qr(
@@ -263,6 +268,8 @@ def main():
                 summary["verwendungszweck"],
                 qr_path
             )
+        else:
+            print("ℹ️ Nicht alle QR-Informationen vorhanden – QR-Code wird nicht erstellt.")
 
         # Eintrag in die Datenbank
         insert_document(summary, qr_filename)
